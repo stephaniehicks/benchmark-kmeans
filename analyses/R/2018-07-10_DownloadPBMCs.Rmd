@@ -1,0 +1,58 @@
+---
+title: "Download PBMCs"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document talks about how to download some single cell gene expression data. 
+We will use peripheral blood mononuclear cells (PBMCs) from 10X Genomics. We use 
+the `Gene / cell matrix (raw)` [data set](https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.1.0/fresh_68k_pbmc_donor_a) 
+with 68K cells. The genes in the list contains every barcode from fixed list of known-good barcode sequences. This includes background and non-cellular barcodes. 
+
+When you download the `fresh_68k_pbmc_donor_a_raw_gene_bc_matrices.tar` file, 
+unzip it and the output will be a folder titled `matrices_mex/hg19`. In it will be three files and the output of te files is described [here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/output/overview). 
+
+The `cellranger` pipeline outputs a Matrix Exchange Format (MEX) which only 
+records the non-zero counts. It also includes `TSV` files with gene and cell 
+names. More information about the MEX can be found [here](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/output/matrices). 
+
+Next we need to convert from `MEX` format to a data frame in Python or R
+
+## Convert from MEX to dataframe
+
+#### Using Python
+
+```{python, eval = FALSE}
+import csv
+import os
+import scipy.io
+ 
+genome = "hg19"
+matrices_dir = "/users/shicks1/data/10X/PBMCs68K_DonorA_mex"
+human_matrix_dir = os.path.join(matrices_dir, genome)
+mat = scipy.io.mmread(os.path.join(human_matrix_dir, "matrix.mtx"))
+ 
+genes_path = os.path.join(human_matrix_dir, "genes.tsv")
+gene_ids = [row[0] for row in csv.reader(open(genes_path), delimiter="\t")]
+gene_names = [row[1] for row in csv.reader(open(genes_path), delimiter="\t")]
+ 
+barcodes_path = os.path.join(human_matrix_dir, "barcodes.tsv")
+barcodes = [row[0] for row in csv.reader(open(barcodes_path), delimiter="\t")]
+```
+
+#### Using R 
+
+First we need to install the `cellrangerRkit` R package
+
+```{r, eval=FALSE}
+source("http://cf.10xgenomics.com/supp/cell-exp/rkit-install-2.0.0.R")
+```
+
+```{r}
+library(cellrangerRkit)
+packageVersion("cellrangerRkit")
+```
+
