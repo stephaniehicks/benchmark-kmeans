@@ -1,0 +1,41 @@
+---
+title: "Single-cell gene expression data from Zeisel et al. 2015"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document loads a single cell gene expression data from 
+[Zeisel et al. 2015](http://science.sciencemag.org/content/347/6226/1138). 
+There are 3005 cells and 20,063 genes in the dataset. The cells come the 
+mouse cortex and hippocampus. 
+
+The goals for this dataset are: 
+
+1. Apply quality control and normalization to single cell data. Read about this in the [scater](https://bioconductor.org/packages/release/bioc/html/scater.html) Bioconductor package. 
+2. Try running t-sne and PCA. 
+3. Try running k-means on data. 
+
+Load libraries
+```{r}
+library(SingleCellExperiment)
+library(scater)
+```
+
+Load dataset (available at `/data/2015-Zeisel-MouseCortex.RDS` in GitHub repo) in 
+the RDS format (note: need to change your path)
+```{r}
+sce <- readRDS("/users/shicks1/data/single-cellRDS/2015-Zeisel-MouseCortex.RDS")
+sce
+
+assay(sce, "counts") # count table with gene along the rows and cells along the columns
+colData(sce)         # phenotypic table containing meta information about dataset
+```
+
+You can save these two datasets as CSV files and import into Python.
+
+We can also perform some basic quality control using the [scater](https://bioconductor.org/packages/release/bioc/html/scater.html)
+Bioconductor package. 
+
