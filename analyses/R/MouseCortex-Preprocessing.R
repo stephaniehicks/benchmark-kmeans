@@ -20,6 +20,8 @@ filtered <- example_sce[,keep.total & keep.n]
 dim(filtered)
 
 #normalize
+sizeFactors(filtered) <- librarySizeFactors(filtered)
+summary(sizeFactors(filtered))
 norm <- normalize(filtered)
 dim(norm)
 
