@@ -1,0 +1,86 @@
+---
+title: "Why do we log transform, center and scale data for PCA?"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Useful links about PCA: 
+
+* [Motivating PCA using twin heights](http://genomicsclass.github.io/book/pages/pca_motivation.html)
+* [PH525x](http://genomicsclass.github.io/book/pages/pca_svd.html)
+
+
+```{r}
+data(iris)
+head(iris)
+apply(iris[,-5], 2, mean) # means
+apply(iris[,-5], 2, sd) # standard deivations
+```
+We see the iris data has different means and variances for the measured features of the iris flowers.
+
+We can also visualize the relationship between two measured features e.g. 
+
+```{r}
+plot(iris$Petal.Length, iris$Petal.Width, col=iris$Spec)
+```
+
+Now let's apply PCA to the iris data with and without log transformation, with and without centering and scaling the data.
+```{r}
+par(mfrow=c(2,2))
+# no log transformation, no centering or scaling
+plot(prcomp(iris[,-5],cen=F,sca=F)$x[,1:2],col=iris$Spec, 
+     main = "no log transformation\n no center") 
+
+# no log transformation, with centering and scaling
+plot(prcomp(iris[,-5],cen=T,sca=T)$x[,1:2],col=iris$Spec, 
+     main = "no log transformation\n yes center")
+
+# with log transformation, no centering or scaling
+plot(prcomp(log(iris[,-5]),cen=F,sca=F)$x[,1:2],col=iris$Spec, 
+     main = "yes log transformation\n no center") 
+
+# with log transformation, with centering and scaling
+plot(prcomp(log(iris[,-5]),cen=T,sca=T)$x[,1:2],col=iris$Spec, 
+     main = "yes log transformation\n yes center")
+```
+
+We see that if we center and scale the data, we get better separation between the three types of iris flowers. However the log transformation wasn't particularly useful. 
+
+To motivate why a log transformation can be useful in some datasets, let's add two new iris flower observations from two new species to iris data witha  peta length of 375cm and 0.00375cm. 
+
+```{r}
+levels(iris[,5]) = c(levels(iris[,5]),
+                     "setosa_gigantica", "virginica_brevis")
+# a big flower with long petal length
+iris[151,] = list(6,3, 375, 1.5, "setosa_gigantica")
+
+# a small flower with short petal length
+iris[152,] = list(6,3, .00375, 1.5, "virginica_brevis") 
+plot(iris$Petal.Length, iris$Petal.Width, col=iris$Spec)
+```
+
+If we apply PCA to this new dataset, it will find differences between the large flower and all the rest. Let's apply PCA to the iris data with and without log transformation, with and without centering and scaling the data to this new iris data.
+
+```{r}
+par(mfrow=c(2,2))
+# no log transformation, no centering or scaling
+plot(prcomp(iris[,-5],cen=F,sca=F)$x[,1:2],col=iris$Spec, 
+     main = "no log transformation\n no center") 
+
+# no log transformation, with centering and scaling
+plot(prcomp(iris[,-5],cen=T,sca=T)$x[,1:2],col=iris$Spec, 
+     main = "no log transformation\n yes center")
+
+# with log transformation, no centering or scaling
+plot(prcomp(log(iris[,-5]),cen=F,sca=F)$x[,1:2],col=iris$Spec, 
+     main = "yes log transformation\n no center") 
+
+# with log transformation, with centering and scaling
+plot(prcomp(log(iris[,-5]),cen=T,sca=T)$x[,1:2],col=iris$Spec, 
+     main = "yes log transformation\n yes center")
+```
+
+
