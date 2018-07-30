@@ -1,0 +1,95 @@
+---
+title: "Analysis of Iris Dataset"
+author: "Shenzhi Shi"
+output:
+  html_document: default
+---
+
+The purpose of this R markdown is to:
+
+1. Run KMeans() and MiniBatchKMeans() in Python using the iris dataset stored in an HDF5 file
+2. Run the above code in R using the BiocSklearn package
+3. Compare the results from in Python to running in R
+
+```{R, eval = TRUE}
+library(reticulate)
+use_python("/Users/Diamond/anaconda3/lib/python3.6/site-packages")
+import("pandas")
+```
+
+## Running the code in Python
+
+#### First, we import all resources we will need and load in the iris dataset
+```{python, eval = TRUE}
+import matplotlib.pyplot as plt
+import seaborn as sns; sns.set()  # for plot styling
+import numpy as np
+import pandas as pd
+
+from sklearn.cluster import KMeans, MiniBatchKMeans
+from sklearn import datasets
+
+import h5py
+
+#load iris dataset
+iris = datasets.load_iris()
+X = iris.data
+y = iris.target
+```
+
+#### Next, we write the iris dataset to an HDF5 file
+```{python, eval = TRUE}
+#writing the iris dataset into an hdf5 file
+file = h5py.File("iris_data.h5", 'w') #creating file object in write mode
+#add compressed iris dataset to the file. In this case, we will chunk by rows, since the samples are along the rows
+file.create_dataset("iris", data = X, chunks = (1,X.shape[1]), compression = "gzip")
+file.close() #close file
+```
+
+#### Next, we try KMeans on the Iris dataset. This classic implementation of the clustering method based on the Lloyd’s algorithm. It consumes the whole set of input data at each iteration.
+```{python, eval = TRUE}
+f = h5py.File("iris_data.h5", 'r') #load hdf5 file
+X = f.get('iris') #get iris dataset
+km = KMeans(n_clusters = 3)
+km.fit(X) # fitting the input data
+labels = km.predict(X) # getting cluster labels
+
+centroids = km.cluster_centers_
+
+plt.scatter(X[:, 0], X[:, 1], c=labels, s=50, cmap='viridis'); 
+plt.scatter(centroids[:, 0], centroids[:, 1], c='black', s=200, alpha=0.5);
+plt.show()
+f.close() #close hdf5 file. 
+```
+Note: If we call f.close() before we run fit on X, there will be an error because the dataset isn't in memory anymore
+
+#### Finally, we run MiniBatchKMeans
+```{python, eval = TRUE}
+f = h5py.File("iris_data.h5", 'r') #load hdf5 file
+X = f.get('iris') #get iris dataset
+
+for i in range(15): #loops through different batch sizes
+    mbkm = MiniBatchKMeans(n_clusters = 3, batch_size=(10*(i+1)))
+    mbkm.partial_fit(X) # fitting the input data
+    labels = mbkm.predict(X) # getting cluster labels
+
+    centroids = mbkm.cluster_centers_
+
+    plt.figure(i)
+    plt.title("batch_size = "+str(10*(i+1)))
+    plt.scatter(X[:, 0], X[:, 1], c=labels, s=50, cmap='viridis'); 
+    plt.scatter(centroids[:, 0], centroids[:, 1], c='black', s=200, alpha=0.5);
+    plt.show()
+
+f.close() #close hdf5 file
+```
+
+## Running the code in R
+
+```{R, eval = TRUE}
+library(BiocSklearn)
+els = SklearnEls()
+print(els)
+
+
+```
