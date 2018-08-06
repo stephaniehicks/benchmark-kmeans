@@ -6,7 +6,6 @@ sce <- readRDS("~/Downloads/2015-Zeisel-MouseCortex.RDS")
 sce
 
 example_sce <- calculateQCMetrics(sce)
-colnames(colData(example_sce))
 dim(example_sce)
 
 #filter by features
@@ -33,8 +32,10 @@ dim(norm)
 normlizedmousedata <- assay(norm, "logcounts") # count table with gene along the rows and cells along the columns
 mouseMeta <- colData(norm)         # phenotypic table containing meta information about dataset
 
-center <- colMeans(normlizedmousedata)
-countTable <- normlizedmousedata - rep(center, rep.int(nrow(normlizedmousedata), ncol(normlizedmousedata)))
+center <- rowMeans(normlizedmousedata)
+countTable <- sweep(normlizedmousedata, 1, center, FUN="-")
+#countTable <- normlizedmousedata - rep(center, rep.int(nrow(normlizedmousedata), ncol(normlizedmousedata)))
 
 #save to .csv file
-write.csv(countTable, file = "~/Desktop/2018summerintern/python/mouseCounts.csv")
+write.csv(countTable, file = "~/Desktop/2018summerintern/python/mouseData.csv")
+write.csv(colData(norm)["level1class"], file = "~/Desktop/2018summerintern/python/realMouse.csv")
