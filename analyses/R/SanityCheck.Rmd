@@ -1,0 +1,30 @@
+---
+title: "KMeans in R and Python"
+output: html_document
+---
+
+## Using iris dataset
+```{R, eval = TRUE}
+iris = iris[,1:4]
+```
+
+##Running KMeans in R
+```{R, eval = TRUE}
+rkm <- kmeans(iris, 3)
+rcl <- rkm$cluster
+```
+
+##Running KMeans in Python through BiocSklearn
+```{R, eval = TRUE}
+library(BiocSklearn)
+skcl = import("sklearn.cluster", delay_load = TRUE)
+
+pkm = skcl$KMeans(n_clusters = 3L)$fit(iris)
+pcl = pkm$predict(iris)
+```
+
+##Table for results
+```{R, eval = TRUE}
+table(pcl,rcl)
+```
+#### There should only be three sections in the table, if the clusters are the same for both KMeans
