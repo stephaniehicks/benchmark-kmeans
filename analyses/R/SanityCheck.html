@@ -9,6 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
+<meta name="author" content="Shenzhi Shi" />
 
 
 <title>KMeans in R and Python</title>
@@ -121,6 +122,8 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">KMeans in R and Python</h1>
+<h4 class="author"><em>Shenzhi Shi</em></h4>
+<h4 class="date"><em>8/8/2018</em></h4>
 
 </div>
 
@@ -136,69 +139,8 @@ rcl &lt;- rkm$cluster</code></pre>
 </div>
 <div id="running-kmeans-in-python-through-biocsklearn" class="section level2">
 <h2>Running KMeans in Python through BiocSklearn</h2>
-<pre class="r"><code>library(BiocSklearn)</code></pre>
-<pre><code>## Loading required package: reticulate</code></pre>
-<pre><code>## Loading required package: SummarizedExperiment</code></pre>
-<pre><code>## Loading required package: GenomicRanges</code></pre>
-<pre><code>## Loading required package: stats4</code></pre>
-<pre><code>## Loading required package: BiocGenerics</code></pre>
-<pre><code>## Loading required package: parallel</code></pre>
-<pre><code>## 
-## Attaching package: 'BiocGenerics'</code></pre>
-<pre><code>## The following objects are masked from 'package:parallel':
-## 
-##     clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
-##     clusterExport, clusterMap, parApply, parCapply, parLapply,
-##     parLapplyLB, parRapply, parSapply, parSapplyLB</code></pre>
-<pre><code>## The following objects are masked from 'package:stats':
-## 
-##     IQR, mad, sd, var, xtabs</code></pre>
-<pre><code>## The following objects are masked from 'package:base':
-## 
-##     anyDuplicated, append, as.data.frame, basename, cbind,
-##     colMeans, colnames, colSums, dirname, do.call, duplicated,
-##     eval, evalq, Filter, Find, get, grep, grepl, intersect,
-##     is.unsorted, lapply, lengths, Map, mapply, match, mget, order,
-##     paste, pmax, pmax.int, pmin, pmin.int, Position, rank, rbind,
-##     Reduce, rowMeans, rownames, rowSums, sapply, setdiff, sort,
-##     table, tapply, union, unique, unsplit, which, which.max,
-##     which.min</code></pre>
-<pre><code>## Loading required package: S4Vectors</code></pre>
-<pre><code>## 
-## Attaching package: 'S4Vectors'</code></pre>
-<pre><code>## The following object is masked from 'package:base':
-## 
-##     expand.grid</code></pre>
-<pre><code>## Loading required package: IRanges</code></pre>
-<pre><code>## Loading required package: GenomeInfoDb</code></pre>
-<pre><code>## Loading required package: Biobase</code></pre>
-<pre><code>## Welcome to Bioconductor
-## 
-##     Vignettes contain introductory material; view with
-##     'browseVignettes()'. To cite Bioconductor, see
-##     'citation(&quot;Biobase&quot;)', and for packages 'citation(&quot;pkgname&quot;)'.</code></pre>
-<pre><code>## Loading required package: DelayedArray</code></pre>
-<pre><code>## Loading required package: matrixStats</code></pre>
-<pre><code>## 
-## Attaching package: 'matrixStats'</code></pre>
-<pre><code>## The following objects are masked from 'package:Biobase':
-## 
-##     anyMissing, rowMedians</code></pre>
-<pre><code>## Loading required package: BiocParallel</code></pre>
-<pre><code>## 
-## Attaching package: 'DelayedArray'</code></pre>
-<pre><code>## The following objects are masked from 'package:matrixStats':
-## 
-##     colMaxs, colMins, colRanges, rowMaxs, rowMins, rowRanges</code></pre>
-<pre><code>## The following objects are masked from 'package:base':
-## 
-##     aperm, apply</code></pre>
-<pre><code>## Loading required package: knitr</code></pre>
-<pre><code>## Loading required package: HDF5Array</code></pre>
-<pre><code>## Loading required package: rhdf5</code></pre>
-<pre><code>## checking python library availability...</code></pre>
-<pre><code>## done.</code></pre>
-<pre class="r"><code>skcl = import(&quot;sklearn.cluster&quot;, delay_load = TRUE)
+<pre class="r"><code>suppressMessages(library(BiocSklearn))
+skcl = import(&quot;sklearn.cluster&quot;, delay_load = TRUE)
 
 pkm = skcl$KMeans(n_clusters = 3L)$fit(iris)
 pcl = pkm$predict(iris)</code></pre>
@@ -208,11 +150,42 @@ pcl = pkm$predict(iris)</code></pre>
 <pre class="r"><code>table(pcl,rcl)</code></pre>
 <pre><code>##    rcl
 ## pcl  1  2  3
-##   0 38  0  0
-##   1  0 50  0
-##   2  0  0 62</code></pre>
+##   0  0 62  0
+##   1 50  0  0
+##   2  0  0 38</code></pre>
 <div id="there-should-only-be-three-sections-in-the-table-if-the-clusters-are-the-same-for-both-kmeans" class="section level4">
 <h4>There should only be three sections in the table, if the clusters are the same for both KMeans</h4>
+</div>
+</div>
+<div id="for-minibatchkmeans" class="section level2">
+<h2>For MiniBatchKmeans</h2>
+<pre class="r"><code>suppressMessages(library(ClusterR))
+rmbk = MiniBatchKmeans(iris, clusters = 3, batch_size = 50)
+rmcl = predict_MBatchKMeans(iris, rmbk$centroids)
+
+
+pmbk = skcl$MiniBatchKMeans(n_clusters = 3L, batch_size = 50L)$fit(iris)
+pmcl = pmbk$predict(iris)
+
+table(pmcl, rmcl)</code></pre>
+<pre><code>##     rmcl
+## pmcl  1  2  3
+##    0  0 46  0
+##    1 50  0  0
+##    2  0 15 39</code></pre>
+<div id="minibatchkmeans-is-pretty-inconsistent-probably-because-it-has-more-random-elements" class="section level4">
+<h4>MiniBatchKmeans is pretty inconsistent, probably because it has more random elements</h4>
+<pre class="r"><code>pmbk2 = skcl$MiniBatchKMeans(n_clusters = 3L, batch_size = 50L)$fit(iris)
+pmcl2 = pmbk2$predict(iris)
+table(pmcl, pmcl2)</code></pre>
+<pre><code>##     pmcl2
+## pmcl  0  1  2
+##    0  0 46  0
+##    1 50  0  0
+##    2  0 16 38</code></pre>
+</div>
+<div id="if-we-test-two-implementations-of-just-python-code-the-results-are-similar-to-the-ones-above" class="section level4">
+<h4>If we test two implementations of just python code, the results are similar to the ones above</h4>
 </div>
 </div>
 

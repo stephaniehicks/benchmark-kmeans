@@ -1,5 +1,7 @@
 ---
 title: "KMeans in R and Python"
+author: Shenzhi Shi
+date: 8/8/2018
 output: html_document
 ---
 
@@ -16,7 +18,7 @@ rcl <- rkm$cluster
 
 ##Running KMeans in Python through BiocSklearn
 ```{R, eval = TRUE}
-library(BiocSklearn)
+suppressMessages(library(BiocSklearn))
 skcl = import("sklearn.cluster", delay_load = TRUE)
 
 pkm = skcl$KMeans(n_clusters = 3L)$fit(iris)
@@ -28,3 +30,23 @@ pcl = pkm$predict(iris)
 table(pcl,rcl)
 ```
 #### There should only be three sections in the table, if the clusters are the same for both KMeans
+
+##For MiniBatchKmeans
+```{R, eval = TRUE}
+suppressMessages(library(ClusterR))
+rmbk = MiniBatchKmeans(iris, clusters = 3, batch_size = 50)
+rmcl = predict_MBatchKMeans(iris, rmbk$centroids)
+
+
+pmbk = skcl$MiniBatchKMeans(n_clusters = 3L, batch_size = 50L)$fit(iris)
+pmcl = pmbk$predict(iris)
+
+table(pmcl, rmcl)
+```
+#### MiniBatchKmeans is pretty inconsistent, probably because it has more random elements
+```{R, eval = TRUE}
+pmbk2 = skcl$MiniBatchKMeans(n_clusters = 3L, batch_size = 50L)$fit(iris)
+pmcl2 = pmbk2$predict(iris)
+table(pmcl, pmcl2)
+```
+#### If we test two implementations of just python code, the results are similar to the ones above
