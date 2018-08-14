@@ -1,0 +1,178 @@
+---
+title: "MouseAnalysis"
+author: "Shenzhi Shi"
+date: "8/13/2018"
+output: html_document
+---
+## Preprocessing mouse data
+```{R, eval = TRUE}
+suppressMessages(library(SingleCellExperiment))
+suppressMessages(library(scater))
+suppressMessages(library(scran))
+
+#read in data
+sce <- readRDS("~/Downloads/2015-Zeisel-MouseCortex.RDS")
+#sce
+
+example_sce <- calculateQCMetrics(sce)
+#dim(example_sce)
+
+ercc_genes <- grep("ERCC", rownames(sce))
+mt_genes <- grep("mt-", rownames(sce))
+sce <- calculateQCMetrics(sce, feature_controls = c(ERCC = ercc_genes, mt = mt_genes))
+#dim(sce)
+#table(sce$level1class) # smallest group has 98 cells
+
+#### filter by features
+
+# Here we want to look for genes that have least one count in 98 cells (smallest group identified by Zeisel et al)
+keep_feature <- nexprs(sce, byrow=TRUE) >= 98
+# Next we remove lowly expressed genes using a mean-based filter
+ave.counts <- rowMeans(counts(sce))
+keep_feature <- keep_feature & rowMeans(counts(sce)) >= 0.2
+#sum(keep_feature) # we will keep 8912 genes
+
+sce$use <- (sce$total_features > 1000 & # sufficient features (genes)
+            sce$total_counts > 5000 # sufficient molecules counted
+)
+#table(sce$use) # keep 2992 cells
+filtered <- sce[keep_feature, sce$use]
+#dim(filtered)
+
+#### normalize
+## size factor normalisation with scran 
+qclust <- quickCluster(filtered) # this step is slow. It is also important because the cell types are very, very different. 
+#The assumptions for the normalization require it. 
+filtered <- computeSumFactors(filtered, clusters = qclust)
+#summary(sizeFactors(filtered))
+
+# wider scatter plot than just along the line; reflects DE between cell types in Zeisel data
+#plot(sizeFactors(filtered), filtered$total_counts/1e3, log="xy", ylab="Library size (thousands)", xlab="Size factor")
+
+# compute scaling factors (total counts of ERCC spikes) separately for ERCC spikes
+filtered <- computeSpikeFactors(filtered, type="ERCC", general.use=FALSE)
+
+# normalize data
+filtered <- normalize(filtered)
+
+#### remove ERCC spike in and MT genes for downstream analyses
+filtered <- filtered[!rowData(filtered)$is_feature_control, ]
+
+# test out tSNE in R
+#plotTSNE(filtered, colour_by = "level1class", rand_seed = 20180808)
+# see quite a bit of clustering in the tSNE plot
+
+#### Save data
+#get counts and colData from preprocessed and normalized data
+normlizedmousedata <- assay(filtered, "logcounts") # count table with gene along the rows and cells along the columns
+mouseMeta <- colData(filtered)         # phenotypic table containing meta information about dataset
+
+#mean centering
+center <- rowMeans(normlizedmousedata)
+mousedata <- sweep(normlizedmousedata, 1, center, FUN="-")
+```
+
+## Plot mouse data in TSNE
+```{R, eval = TRUE}
+#plot through Rtsne directly
+truth = c(1:2992)
+lv1class <- colData(filtered)["level1class"]$level1class
+for(i in 1:length(lv1class)) {
+  if(lv1class[i] == "astrocytes_ependymal"){
+    truth[i] <- 1
+  }
+  if(lv1class[i] == "endothelial-mural"){
+    truth[i] <- 2
+  }
+  if(lv1class[i] == "interneurons"){
+    truth[i] <- 3
+  }
+  if(lv1class[i] == "microglia"){
+    truth[i] <- 4
+  }
+  if(lv1class[i] == "oligodendrocytes"){
+    truth[i] <- 5
+  }
+  if(lv1class[i] == "pyramidal CA1"){
+    truth[i] <- 6
+  }
+  if(lv1class[i] == "pyramidal SS"){
+    truth[i] <- 7
+  }
+}
+ 
+suppressMessages(library(Rtsne))
+set.seed(20180808)
+rtsne <- Rtsne(t(mousedata))$Y
+plot(rtsne  [,1],rtsne[,2], col = truth)
+title("R tSNE")
+
+#Using BiocSklearn
+suppressMessages(library(BiocSklearn))
+mnf <- import("sklearn.manifold", delay_load = TRUE)
+pytsne <- mnf$TSNE(random_state = 20180808L)$fit_transform(t(mousedata))
+plot(pytsne[,1],pytsne[,2], col = truth)
+title("Python tSNE")
+```
+
+## Plot in PCA
+```{R, eval = TRUE}
+#plot pca of first 10 pcs in R
+rpca <- prcomp(t(mousedata), rank. = 10)$x
+plot(rpca, col = truth)
+title("R PCA")
+
+#plot pca in python
+pypca <- SklearnEls()$skd$PCA(n_components = 10L)$fit_transform(t(mousedata))
+plot(pypca[,1],pypca[,2], col = truth)
+title("Python PCA")
+```
+
+## Comparison of KMeans
+```{R, eval = TRUE}
+#compare for tSNE results
+rkm <- kmeans(rtsne, 7)
+R_KMeans_tSNE <- rkm$cluster
+
+pkm <- SklearnEls()$skcl$KMeans(n_clusters = 7L)$fit(pytsne)
+Python_KMeans_tSNE<- pkm$predict(pytsne)
+
+print("tSNE Results for KMeans")
+table(R_KMeans_tSNE, Python_KMeans_tSNE)
+
+#compare for pca results
+rkm <- kmeans(rpca, 7)
+R_KMeans_PCA <- rkm$cluster
+
+pkm <- SklearnEls()$skcl$KMeans(n_clusters = 7L)$fit(pypca)
+Python_KMeans_PCA <- pkm$predict(pypca)
+
+print("PCA Results for KMeans")
+table(R_KMeans_PCA, Python_KMeans_PCA)
+```
+
+## Comparison of MiniBatchKMeans
+```{R, eval = TRUE}
+suppressMessages(library(ClusterR))
+#compare for tSNE results
+rmbk <- MiniBatchKmeans(rtsne, 7)
+R_MBK_tSNE <- predict_MBatchKMeans(rtsne, rmbk$centroids)
+
+
+pmbk <- SklearnEls()$skcl$MiniBatchKMeans(n_clusters = 7L)$fit(pytsne)
+Python_MBK_tSNE <- pmbk$predict(pytsne)
+
+print("tSNE Results for MBK")
+table(R_MBK_tSNE, Python_MBK_tSNE)
+
+#compare for pca results
+rmbk <- MiniBatchKmeans(rpca, 7)
+R_MBK_PCA <- predict_MBatchKMeans(rpca, rmbk$centroids)
+
+
+pmbk <- SklearnEls()$skcl$MiniBatchKMeans(n_clusters = 7L)$fit(pypca)
+Python_MBK_PCA <- pmbk$predict(pypca)
+
+print("PCA Results for MBK")
+table(R_MBK_PCA, Python_MBK_PCA)
+```
