@@ -257,7 +257,8 @@ title(&quot;Python PCA&quot;)</code></pre>
 </div>
 <div id="comparison-of-kmeans" class="section level2">
 <h2>Comparison of KMeans</h2>
-<pre class="r"><code>#compare for tSNE results
+<pre class="r"><code>cen &lt;- array(c(rpca[1,1:10],rpca[2,1:10],rpca[3,1:10],rpca[4,1:10],rpca[5,1:10],rpca[6,1:10],rpca[7,1:10]), dim = c(7,10))
+#compare for tSNE results
 rkm &lt;- kmeans(rtsne, 7)
 R_KMeans_tSNE &lt;- rkm$cluster
 
@@ -269,32 +270,32 @@ print(&quot;tSNE Results for KMeans&quot;)</code></pre>
 <pre class="r"><code>table(R_KMeans_tSNE, Python_KMeans_tSNE)</code></pre>
 <pre><code>##              Python_KMeans_tSNE
 ## R_KMeans_tSNE   0   1   2   3   4   5   6
-##             1   5  62   4   1   0 571   0
-##             2   0   0   1   0 282   0   2
-##             3  56   0  31   2   1   0 373
-##             4 384   0  25   1   0   0  27
-##             5  76   2  16   1  10   0 289
-##             6  48 168  11   4  11  26  11
-##             7  64   8 404  10   4   0   1</code></pre>
+##             1   5 571  62   0   0   4   1
+##             2   0   0   0   1 283   1   0
+##             3  56   0   0 373   1  31   2
+##             4 384   0   0  27   0  25   1
+##             5  76   0   2 289  10  16   1
+##             6  48  26 168  11  11  11   4
+##             7  66   0   8   1   4 402  10</code></pre>
 <pre class="r"><code>#compare for pca results
-rkm &lt;- kmeans(rpca, 7)
+rkm &lt;- kmeans(rpca, centers = cen)
 R_KMeans_PCA &lt;- rkm$cluster
 
-pkm &lt;- SklearnEls()$skcl$KMeans(n_clusters = 7L)$fit(pypca)
-Python_KMeans_PCA &lt;- pkm$predict(pypca)
+pkm &lt;- SklearnEls()$skcl$KMeans(n_clusters = 7L, init = cen)$fit(rpca)
+Python_KMeans_PCA &lt;- pkm$predict(rpca)
 
 print(&quot;PCA Results for KMeans&quot;)</code></pre>
 <pre><code>## [1] &quot;PCA Results for KMeans&quot;</code></pre>
 <pre class="r"><code>table(R_KMeans_PCA, Python_KMeans_PCA)</code></pre>
 <pre><code>##             Python_KMeans_PCA
 ## R_KMeans_PCA   0   1   2   3   4   5   6
-##            1 662   0   0   0   1   0   0
-##            2   0  60   0  76   0 492   0
-##            3   0   7 276   0   0   0   0
-##            4   0   1   0   0   2   3 302
-##            5   0   1   0   0 177   0   0
-##            6   0 267   7 459   0   0   0
-##            7 102  62   9   8   1  16   1</code></pre>
+##            1 628   0   0   0   0   0   0
+##            2   0 178   0   0   0   0   0
+##            3   0   0 283   0   0   0   0
+##            4   1   1   0 306   0   0   0
+##            5   0   0   1   0 732   0   0
+##            6   0   1   0   0   0 654   8
+##            7   0   0   1   0   1   0 197</code></pre>
 </div>
 <div id="comparison-of-minibatchkmeans" class="section level2">
 <h2>Comparison of MiniBatchKMeans</h2>
@@ -312,33 +313,33 @@ print(&quot;tSNE Results for MBK&quot;)</code></pre>
 <pre class="r"><code>table(R_MBK_tSNE, Python_MBK_tSNE)</code></pre>
 <pre><code>##           Python_MBK_tSNE
 ## R_MBK_tSNE   0   1   2   3   4   5   6
-##          1   0   0 288   0  15   0   7
-##          2  43   0   1   1   0   3 278
-##          3   0 114   0   2   0   0   0
-##          4  30 236   2  64   3   8 142
-##          5 411   0   0   0 394   3  32
-##          6 108   0   5  23 321   2  37
-##          7  10 124  12 264   1   2   6</code></pre>
+##          1  15   0   6   1   0 288   0
+##          2   0   0 235  75   2   2  12
+##          3   0 115   1   0   0   0   0
+##          4   2 287 129  55   8   2   2
+##          5 341   0   9  43   3   0 444
+##          6 260   4  46 155   2   5  24
+##          7   1 260 132  12   2  12   0</code></pre>
 <pre class="r"><code>#compare for pca results
 rmbk &lt;- MiniBatchKmeans(rpca, 7)
 R_MBK_PCA &lt;- predict_MBatchKMeans(rpca, rmbk$centroids)
 
 
-pmbk &lt;- SklearnEls()$skcl$MiniBatchKMeans(n_clusters = 7L)$fit(pypca)
-Python_MBK_PCA &lt;- pmbk$predict(pypca)
+pmbk &lt;- SklearnEls()$skcl$MiniBatchKMeans(n_clusters = 7L)$fit(rpca)
+Python_MBK_PCA &lt;- pmbk$predict(rpca)
 
 print(&quot;PCA Results for MBK&quot;)</code></pre>
 <pre><code>## [1] &quot;PCA Results for MBK&quot;</code></pre>
 <pre class="r"><code>table(R_MBK_PCA, Python_MBK_PCA)</code></pre>
 <pre><code>##          Python_MBK_PCA
 ## R_MBK_PCA   0   1   2   3   4   5   6
-##         1  10   0   6  69 499   2   0
-##         2 814   0  26  27 123   1   0
-##         3   0   0 110  27   0  75 183
-##         4   1  50   9  13   0   1   2
-##         5   0 116  16   0   0   1   3
-##         6 121   0   4   5  80   0   0
-##         7   0 561   8  28   0   1   0</code></pre>
+##         1  14 550   3   3   2   3  11
+##         2 573 314  72   1   1   2  28
+##         3   0   0   0 217   0  76 102
+##         4   2   1   0   4  59   2   8
+##         5   0   0   0   3 116   1  16
+##         6   0   3 203   0   0   0   4
+##         7   0   2   0   0 586   1   9</code></pre>
 </div>
 
 

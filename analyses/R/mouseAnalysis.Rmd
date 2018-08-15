@@ -130,6 +130,7 @@ title("Python PCA")
 
 ## Comparison of KMeans
 ```{R, eval = TRUE}
+cen <- array(c(rpca[1,1:10],rpca[2,1:10],rpca[3,1:10],rpca[4,1:10],rpca[5,1:10],rpca[6,1:10],rpca[7,1:10]), dim = c(7,10))
 #compare for tSNE results
 rkm <- kmeans(rtsne, 7)
 R_KMeans_tSNE <- rkm$cluster
@@ -141,11 +142,11 @@ print("tSNE Results for KMeans")
 table(R_KMeans_tSNE, Python_KMeans_tSNE)
 
 #compare for pca results
-rkm <- kmeans(rpca, 7)
+rkm <- kmeans(rpca, centers = cen)
 R_KMeans_PCA <- rkm$cluster
 
-pkm <- SklearnEls()$skcl$KMeans(n_clusters = 7L)$fit(pypca)
-Python_KMeans_PCA <- pkm$predict(pypca)
+pkm <- SklearnEls()$skcl$KMeans(n_clusters = 7L, init = cen)$fit(rpca)
+Python_KMeans_PCA <- pkm$predict(rpca)
 
 print("PCA Results for KMeans")
 table(R_KMeans_PCA, Python_KMeans_PCA)
@@ -170,8 +171,8 @@ rmbk <- MiniBatchKmeans(rpca, 7)
 R_MBK_PCA <- predict_MBatchKMeans(rpca, rmbk$centroids)
 
 
-pmbk <- SklearnEls()$skcl$MiniBatchKMeans(n_clusters = 7L)$fit(pypca)
-Python_MBK_PCA <- pmbk$predict(pypca)
+pmbk <- SklearnEls()$skcl$MiniBatchKMeans(n_clusters = 7L)$fit(rpca)
+Python_MBK_PCA <- pmbk$predict(rpca)
 
 print("PCA Results for MBK")
 table(R_MBK_PCA, Python_MBK_PCA)
