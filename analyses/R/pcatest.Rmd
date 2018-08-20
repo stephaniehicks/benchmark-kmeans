@@ -1,0 +1,76 @@
+---
+title: "PCA Test"
+author: "Shenzhi Shi"
+date: "8/20/2018"
+output: html_document
+---
+
+## Read mouse data from hdf5 file
+```{R, eval = TRUE}
+#using rhdf5
+library(rhdf5)
+r_mousedata <- h5read(file = "r-mouse-data.h5", name = "mousedata")
+#using good practice and closing file
+H5close()
+```
+
+## Run pca 
+```{R, eval = TRUE}
+#plot pca of first 10 pcs in R
+rpca <- prcomp(t(r_mousedata), rank. = 10)$x
+plot(rpca)
+title("R PCA")
+```
+ 
+## Compare KMeans results
+```{R, eval = TRUE}
+#Run kmeans using R
+rkm <- kmeans(rpca, centers = 7, algorithm = "Lloyd")
+R_KMeans_PCA <- rkm$cluster
+
+#Runs kmeans using python with biocsklearn
+suppressMessages(library(BiocSklearn))
+pkm <- SklearnEls()$skcl$KMeans(n_clusters = 7L, algorithm = "full")$fit(rpca)
+Python_KMeans_PCA <- pkm$predict(rpca)
+
+#shift python index to match R index
+indexedpy <- Python_KMeans_PCA + 1
+
+#Compare results
+print("PCA Results for KMeans")
+table(R_KMeans_PCA, indexedpy)
+
+#get difference if clusters are aligned
+diff <- (R_KMeans_PCA - indexedpy) + 7
+
+#plot
+plot(rpca, col = R_KMeans_PCA)
+plot(rpca, col = diff)
+```
+#### Using the same starting centers
+```{R, eval = TRUE}
+#set starting centers to be the same
+cen <- array(c(rpca[1,1:10],rpca[2,1:10],rpca[3,1:10],rpca[4,1:10],rpca[5,1:10],rpca[6,1:10],rpca[7,1:10]), dim = c(7,10))
+
+#kmeans using R
+rkm <- kmeans(rpca, centers = cen, algorithm = "Lloyd")
+R_KMeans_PCA <- rkm$cluster
+
+#kmeans using python
+pkm <- SklearnEls()$skcl$KMeans(n_clusters = 7L, init = cen, algorithm = "full")$fit(rpca)
+Python_KMeans_PCA <- pkm$predict(rpca)
+
+#shift index
+indexedpy <- Python_KMeans_PCA + 1
+
+#compare results
+print("PCA Results for KMeans")
+table(R_KMeans_PCA, indexedpy)
+
+#gets difference in points
+diff <- (R_KMeans_PCA - indexedpy) + 7
+
+#plot
+plot(rpca, col = R_KMeans_PCA)
+plot(rpca, col = diff)
+```
